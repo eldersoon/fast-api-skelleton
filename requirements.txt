@@ -1,0 +1,17 @@
+# FastAPI e servidor
+fastapi
+uvicorn[standard]
+
+# Database
+sqlalchemy>=2.0
+alembic
+psycopg2-binary
+
+# Configuração e ambiente
+pydantic-settings
+python-dotenv
+
+# Autenticação e segurança
+python-jose[cryptography]
+passlib[bcrypt]
+

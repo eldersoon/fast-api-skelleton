@@ -1,0 +1,14 @@
+# Este arquivo permite sobrescrever configurações do docker-compose
+# Copie para docker-compose.override.yml para uso local (não commitado)
+#
+# Exemplo: alterar portas ou adicionar variáveis de ambiente locais
+
+version: '3.8'
+
+services:
+  api:
+    environment:
+      # Sobrescrever variáveis específicas para seu ambiente local
+      DEBUG: "True"
+      # DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/fastapi_dev
+

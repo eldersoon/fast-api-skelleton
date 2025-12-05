@@ -14,7 +14,7 @@ from app.db.base import Base
 
 # Importar todos os models para que o Alembic possa detectá-los
 # Isso garante que todos os models sejam incluídos no target_metadata
-from app.models.user import User  # noqa
+import app.models  # noqa: F401 - Importa todos os models registrados
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

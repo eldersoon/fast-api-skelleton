@@ -38,9 +38,22 @@ async def get_current_user(
         raise credentials_exception
     
     from app.services.user_service import get_user_by_email_or_username
-    user = get_user_by_email_or_username(db, username)
+    from sqlalchemy.orm import joinedload
+    user = db.query(UserModel).options(
+        joinedload(UserModel.role)
+    ).filter(
+        (UserModel.email == username) | (UserModel.username == username)
+    ).first()
+    
     if user is None:
         raise credentials_exception
+    
+    # Verificar se usuário tem permissão para acessar o sistema
+    if not user.can_access_system or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This user does not have permission to access the system."
+        )
     
     return user
 
@@ -51,11 +64,28 @@ async def login(
     db: Session = Depends(get_db)
 ):
     """Endpoint de login usando JSON (para uso geral/Insomnia)"""
-    user = authenticate_user(db, login_data.username, login_data.password)
+    from app.services.user_service import get_user_by_email_or_username
+    
+    # Primeiro verificar se usuário existe e credenciais estão corretas
+    user = get_user_by_email_or_username(db, login_data.username)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
+        )
+    
+    from app.core.security import verify_password
+    if not verify_password(login_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+        )
+    
+    # Verificar se usuário tem permissão para acessar o sistema
+    if not user.can_access_system or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This user does not have permission to access the system."
         )
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -72,11 +102,28 @@ async def login_for_access_token(
     db: Session = Depends(get_db)
 ):
     """Endpoint de login usando OAuth2PasswordRequestForm (compatível com Swagger UI)"""
-    user = authenticate_user(db, form_data.username, form_data.password)
+    from app.services.user_service import get_user_by_email_or_username
+    
+    # Primeiro verificar se usuário existe e credenciais estão corretas
+    user = get_user_by_email_or_username(db, form_data.username)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
+        )
+    
+    from app.core.security import verify_password
+    if not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+        )
+    
+    # Verificar se usuário tem permissão para acessar o sistema
+    if not user.can_access_system or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This user does not have permission to access the system."
         )
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)

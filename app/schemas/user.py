@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     username: str
     full_name: Optional[str] = None
     is_active: bool = True
+    can_access_system: bool = True
 
 
 class UserCreate(UserBase):
@@ -19,7 +20,9 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     full_name: Optional[str] = None
     is_active: Optional[bool] = None
+    can_access_system: Optional[bool] = None
     password: Optional[str] = None
+    role_id: Optional[int] = None
 
 
 class UserInDB(UserBase):

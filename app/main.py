@@ -9,7 +9,7 @@ from app.core.exceptions import (
     validation_exception_handler,
     generic_exception_handler
 )
-from app.api.v1.routes import auth, users
+from app.api.v1.routes import auth, users, access
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -34,6 +34,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 # Incluir routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+app.include_router(access.router, prefix="/api/v1/access", tags=["access"])
 
 
 @app.get("/")

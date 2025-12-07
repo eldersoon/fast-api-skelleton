@@ -1,5 +1,6 @@
+from typing import Optional, Tuple, List
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
@@ -28,9 +29,69 @@ def get_user_by_email_or_username(db: Session, identifier: str) -> User | None:
     ).first()
 
 
-def get_users(db: Session, skip: int = 0, limit: int = 100):
-    """Lista usuários com paginação"""
-    return db.query(User).offset(skip).limit(limit).all()
+def count_users(
+    db: Session,
+    email: Optional[str] = None,
+    username: Optional[str] = None,
+    is_active: Optional[bool] = None
+) -> int:
+    """Conta o total de usuários com filtros aplicados"""
+    query = db.query(func.count(User.id))
+    
+    if email:
+        query = query.filter(User.email.ilike(f"%{email}%"))
+    
+    if username:
+        query = query.filter(User.username.ilike(f"%{username}%"))
+    
+    if is_active is not None:
+        query = query.filter(User.is_active == is_active)
+    
+    return query.scalar()
+
+
+def get_users(
+    db: Session,
+    page: int = 1,
+    per_page: int = 10,
+    email: Optional[str] = None,
+    username: Optional[str] = None,
+    is_active: Optional[bool] = None
+) -> Tuple[List[User], int]:
+    """
+    Lista usuários com paginação e filtros
+    
+    Args:
+        db: Sessão do banco de dados
+        page: Número da página (começa em 1)
+        per_page: Itens por página
+        email: Filtrar por email (busca parcial, case-insensitive)
+        username: Filtrar por username (busca parcial, case-insensitive)
+        is_active: Filtrar por status ativo
+    
+    Returns:
+        Tupla (lista de usuários, total de registros)
+    """
+    query = db.query(User)
+    
+    # Aplicar filtros
+    if email:
+        query = query.filter(User.email.ilike(f"%{email}%"))
+    
+    if username:
+        query = query.filter(User.username.ilike(f"%{username}%"))
+    
+    if is_active is not None:
+        query = query.filter(User.is_active == is_active)
+    
+    # Contar total antes da paginação
+    total = query.count()
+    
+    # Aplicar paginação
+    skip = (page - 1) * per_page
+    users = query.offset(skip).limit(per_page).all()
+    
+    return users, total
 
 
 def create_user(db: Session, user: UserCreate) -> User:

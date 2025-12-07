@@ -1,7 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi import HTTPException
 
 from app.core.config import settings
+from app.core.exceptions import (
+    http_exception_handler,
+    validation_exception_handler,
+    generic_exception_handler
+)
 from app.api.v1.routes import auth, users
 
 app = FastAPI(
@@ -18,6 +25,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Exception handlers para padronizar respostas de erro
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
 
 # Incluir routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])

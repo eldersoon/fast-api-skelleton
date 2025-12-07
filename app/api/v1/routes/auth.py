@@ -6,10 +6,12 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.auth import Token, LoginRequest
 from app.schemas.user import User
+from app.schemas.response import GetResponse
 from app.models.user import User as UserModel
 from app.services.user_service import authenticate_user
 from app.core.security import create_access_token, decode_access_token
 from app.core.config import settings
+from app.core.responses import get_response
 
 router = APIRouter()
 
@@ -45,28 +47,6 @@ async def get_current_user(
 
 @router.post("/login", response_model=Token)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
-    """Endpoint de login"""
-    user = authenticate_user(db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    
-    return {"access_token": access_token, "token_type": "bearer"}
-
-
-@router.post("/login/json", response_model=Token)
-async def login_json(
     login_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
@@ -86,8 +66,11 @@ async def login_json(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/me", response_model=User)
+@router.get("/me", response_model=GetResponse[User])
 async def read_users_me(current_user: UserModel = Depends(get_current_user)):
     """Retorna informações do usuário atual"""
-    return current_user
+    return get_response(
+        data=current_user,
+        message="User retrieved successfully"
+    )
 

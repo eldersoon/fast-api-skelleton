@@ -103,6 +103,7 @@ def create_user(db: Session, user: UserCreate) -> User:
         hashed_password=hashed_password,
         full_name=user.full_name,
         is_active=user.is_active,
+        can_access_system=user.can_access_system,
     )
     db.add(db_user)
     db.commit()
@@ -131,11 +132,21 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate) -> User | No
 
 
 def authenticate_user(db: Session, username: str, password: str) -> User | None:
-    """Autentica um usuário"""
+    """
+    Autentica um usuário.
+    
+    Verifica credenciais e permissão de acesso ao sistema.
+    Retorna None se credenciais inválidas ou se usuário não tem permissão.
+    """
     user = get_user_by_email_or_username(db, username)
     if not user:
         return None
     if not verify_password(password, user.hashed_password):
         return None
+    
+    # Bloquear acesso se usuário não tem permissão ou está inativo
+    if not user.can_access_system or not user.is_active:
+        return None
+    
     return user
 

@@ -100,3 +100,18 @@ def error_detail(field: Optional[str] = None, message: str = "") -> ErrorDetail:
     return ErrorDetail(field=field, message=message)
 
 
+def delete_response(
+    message: str = "Resource deleted successfully",
+    status_code: int = status.HTTP_200_OK,
+    errors: Optional[List[ErrorDetail]] = None
+):
+    """Cria uma resposta padronizada para exclusão de recursos"""
+    from app.schemas.response import DeleteResponse
+    return DeleteResponse(
+        message=message,
+        status=status_code,
+        result=None,
+        errors=errors or []
+    )
+
+

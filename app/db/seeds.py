@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.role import Role
 from app.models.module import Module
+from app.core.modules_registry import MODULES_REGISTRY
 
 
 def seed_roles(db: Session):
@@ -42,38 +43,32 @@ def seed_roles(db: Session):
 
 
 def seed_modules(db: Session):
-    """Cria os módulos iniciais do sistema"""
-    modules_data = [
-        {
-            "key": "users",
-            "name": "Usuários",
-            "description": "Gerenciamento de usuários"
-        },
-        {
-            "key": "access_control",
-            "name": "Controle de Acesso",
-            "description": "Gerenciar papéis e permissões"
-        },
-        {
-            "key": "reports",
-            "name": "Relatórios",
-            "description": "Visualização de relatórios"
-        },
-        {
-            "key": "inventory",
-            "name": "Inventário",
-            "description": "Gestão de itens/estoque"
-        }
-    ]
-    
-    for module_data in modules_data:
+    """
+    Sincroniza módulos do MODULES_REGISTRY com o banco de dados.
+    Usa INSERT ... ON CONFLICT DO UPDATE para ser idempotente.
+    """
+    for module_data in MODULES_REGISTRY:
+        # Verificar se módulo já existe
         existing_module = db.query(Module).filter(Module.key == module_data["key"]).first()
-        if not existing_module:
-            module = Module(**module_data)
+        
+        if existing_module:
+            # Atualizar name e description se necessário
+            if (existing_module.name != module_data["name"] or 
+                existing_module.description != module_data.get("description")):
+                existing_module.name = module_data["name"]
+                existing_module.description = module_data.get("description")
+                db.commit()
+        else:
+            # Criar novo módulo
+            module = Module(
+                key=module_data["key"],
+                name=module_data["name"],
+                description=module_data.get("description")
+            )
             db.add(module)
+            db.commit()
     
-    db.commit()
-    print("✓ Modules seeded successfully")
+    print("✓ Modules synchronized successfully")
 
 
 def run_seeds(db: Session):

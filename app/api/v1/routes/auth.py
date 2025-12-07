@@ -15,7 +15,7 @@ from app.core.responses import get_response
 
 router = APIRouter()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 
 async def get_current_user(
@@ -50,8 +50,29 @@ async def login(
     login_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
-    """Endpoint de login usando JSON"""
+    """Endpoint de login usando JSON (para uso geral/Insomnia)"""
     user = authenticate_user(db, login_data.username, login_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+        )
+    
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/token", response_model=Token)
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    """Endpoint de login usando OAuth2PasswordRequestForm (compatível com Swagger UI)"""
+    user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

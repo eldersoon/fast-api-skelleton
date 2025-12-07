@@ -9,10 +9,12 @@ class RoleBase(BaseModel):
 
 
 class RoleCreate(RoleBase):
-    is_system: bool = False
+    # is_system sempre será False para roles criadas via API
+    pass
 
 
 class RoleUpdate(BaseModel):
+    key: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
 

@@ -48,3 +48,8 @@ class ListResponse(BaseResponse[List[T]], Generic[T]):
     meta: Optional[MetaPagination] = Field(None, description="Metadados de paginação")
 
 
+class DeleteResponse(BaseResponse[None]):
+    """Resposta para exclusão de recursos"""
+    pass
+
+
